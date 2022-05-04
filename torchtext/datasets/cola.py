@@ -1,7 +1,7 @@
 import os
 
 from torchtext._internal.module_utils import is_module_available
-from torchtext.data.datasets_utils import _create_dataset_directory
+from torchtext.data.datasets_utils import _create_dataset_directory, _wrap_split_argument
 from typing import Union, Tuple
 
 if is_module_available("torchdata"):
@@ -26,6 +26,7 @@ DATASET_NAME = "CoLA"
 
 
 @_create_dataset_directory(dataset_name=DATASET_NAME)
+@_wrap_split_argument(("train", "dev", "test"))
 def CoLA(root: str, split: Union[Tuple[str], str]):
     """CoLA dataset
 
@@ -60,7 +61,9 @@ def CoLA(root: str, split: Union[Tuple[str], str]):
     cache_decompressed_dp = cache_compressed_dp.on_disk_cache(
         filepath_fn=lambda x: os.path.join(root, _EXTRACTED_FILES[split])
     )
-    cache_decompressed_dp = FileOpener(cache_decompressed_dp, mode="b").load_from_zip()
+    cache_decompressed_dp = (
+        FileOpener(cache_decompressed_dp, mode="b").load_from_zip().filter(lambda x: _EXTRACTED_FILES[split] in x[0])
+    )
     cache_decompressed_dp = cache_decompressed_dp.end_caching(mode="wb", same_filepath_fn=True)
 
     data_dp = FileOpener(cache_decompressed_dp, encoding="utf-8")
